@@ -2,8 +2,8 @@
   <div>
     <v-container>
       <v-row justify="center">
-        <v-col cols="12" md="8">
-          <v-card>
+        <v-col cols="12" md="10" lg="8">
+          <v-card style="min-width: 500px; min-height: 350px;">
             <v-card-title class="text-center">
               <h1>Dashboard</h1>
             </v-card-title>
