@@ -1,5 +1,4 @@
-<script setup>
-import Signup from "./components/Signup.vue"; 
+<script setup> 
 </script>
 
 <template>
@@ -7,6 +6,7 @@ import Signup from "./components/Signup.vue";
     <nav>
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link>
+      
     </nav>
     <router-view />
   </div>
