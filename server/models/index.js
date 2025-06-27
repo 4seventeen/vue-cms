@@ -1,21 +1,7 @@
-const sequelize = require('../config/database');
-const { DataTypes } = require('sequelize');
+// Models are now handled by Supabase
+// This file can be used for any additional model-related utilities if needed
 
-// Example model
-const User = sequelize.define('User', {
-  username: {
-    type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-});
-
-// Add more models here and export
 module.exports = {
-  sequelize,
-  User
+  // Supabase handles all database operations
+  // No Sequelize models needed
 };

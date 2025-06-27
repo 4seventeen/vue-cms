@@ -1,7 +1,7 @@
 <template>
-  <div class="signup">
-    <h1>Sign Up</h1>
-    <form @submit.prevent="handleSignup">
+  <div class="signin">
+    <h1>Sign In</h1>
+    <form @submit.prevent="handleSignin">
       <div>
         <label>Email:</label>
         <input type="email" v-model="email" required :disabled="loading" />
@@ -11,8 +11,8 @@
         <input type="password" v-model="password" required :disabled="loading" />
       </div>
       <button type="submit" :disabled="loading">
-        <span v-if="loading">Creating account...</span>
-        <span v-else>Sign Up</span>
+        <span v-if="loading">Signing in...</span>
+        <span v-else>Sign In</span>
       </button>
     </form>
     
@@ -43,28 +43,31 @@ const clearMessages = () => {
   success.value = ''
 }
 
-const handleSignup = async () => {
+const handleSignin = async () => {
   clearMessages()
   loading.value = true
   
   try {
-    await api.post('/api/signup', {
+    const response = await api.post('/api/signin', {
       email: email.value,
       password: password.value
     })
     
-    success.value = 'Account created successfully! Redirecting to sign in...'
+    success.value = 'Sign in successful! Redirecting...'
     
-    // Clear form
-    email.value = ''
-    password.value = ''
-    
-    // Redirect after showing success message
-    setTimeout(() => {
-      router.push('/signin')
-    }, 2000)
+    // Store the Supabase session token
+    if (response.data.session?.access_token) {
+      localStorage.setItem('token', response.data.session.access_token)
+      
+      // Wait a moment to show success message, then redirect
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1500)
+    } else {
+      error.value = 'No session token received'
+    }
   } catch (err) {
-    const errorMessage = err.response?.data?.error || 'Sign up failed'
+    const errorMessage = err.response?.data?.error || 'Sign in failed'
     error.value = errorMessage
     
     // Clear error after 5 seconds
@@ -77,10 +80,17 @@ const handleSignup = async () => {
     loading.value = false
   }
 }
+
+// Clear error when user starts typing
+const clearErrorOnInput = () => {
+  if (error.value) {
+    error.value = ''
+  }
+}
 </script>
 
 <style scoped>
-.signup {
+.signin {
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
@@ -105,7 +115,7 @@ input:disabled {
 
 button {
   padding: 10px;
-  background: #28a745;
+  background: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
@@ -119,7 +129,7 @@ button:disabled {
 }
 
 button:hover:not(:disabled) {
-  background: #218838;
+  background: #0056b3;
 }
 
 .error-message {
@@ -141,4 +151,4 @@ button:hover:not(:disabled) {
   margin-top: 15px;
   text-align: center;
 }
-</style> 
+</style>
