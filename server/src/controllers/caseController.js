@@ -80,6 +80,13 @@ const createCase = async (req, res) => {
       });
     }
 
+    // Set the user context for RLS policies (if using anon key)
+    // This is an alternative to using service role key
+    const userToken = req.header("Authorization")?.replace("Bearer ", "");
+    if (userToken) {
+      supabase.auth.setSession({ access_token: userToken, refresh_token: null });
+    }
+
     // Start a transaction by creating the case first
     const { data: caseData, error: caseError } = await supabase
       .from('cases')
