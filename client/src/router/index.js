@@ -27,6 +27,11 @@ const routes = [
     component: () => import('../views/Dashboard.vue')
   },
   {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue')
+  },
+  {
     path: '/file-complaint',
     name: 'FileComplaint',
     component: () => import('../views/FileComplaint.vue')

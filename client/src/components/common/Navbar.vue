@@ -3,11 +3,12 @@
     <div class="nav-container">
       <router-link to="/" class="nav-brand">Vue CMS</router-link>
       <div class="nav-links">
-        <router-link to="/" class="nav-link">Home</router-link>
-        <router-link to="/about" class="nav-link">About</router-link>
+
         
         <!-- Unauthenticated links -->
         <template v-if="!isLoggedIn">
+          <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/about" class="nav-link">About</router-link>
           <router-link to="/signin" class="nav-link">Sign In</router-link>
           <router-link to="/signup" class="nav-link">Sign Up</router-link>
         </template>
@@ -15,6 +16,7 @@
         <!-- Authenticated links -->
         <template v-else>
           <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
+          <router-link to="/profile" class="nav-link">Profile</router-link>
           <router-link to="/file-complaint" class="nav-link">File Complaint</router-link>
           <button @click="handleSignOut" class="nav-link signout-btn">Sign Out</button>
         </template>
@@ -42,6 +44,8 @@ const handleSignOut = () => {
 .navbar {
   background: #333;
   padding: 1rem 0;
+  width: 1200px;
+  height: 100%;
 }
 
 .nav-container {
