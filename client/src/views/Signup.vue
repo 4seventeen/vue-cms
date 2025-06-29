@@ -1,20 +1,37 @@
 <template>
   <div class="signup">
-    <h1>Sign Up</h1>
-    <form @submit.prevent="handleSignup">
-      <div>
-        <label>Email:</label>
-        <input type="email" v-model="email" required :disabled="loading" />
-      </div>
-      <div>
-        <label>Password:</label>
-        <input type="password" v-model="password" required :disabled="loading" />
-      </div>
-      <button type="submit" :disabled="loading">
-        <span v-if="loading">Creating account...</span>
-        <span v-else>Sign Up</span>
-      </button>
-    </form>
+    <Card title="Sign Up">
+      <form @submit.prevent="handleSignup">
+        <FormInput
+          v-model="email"
+          label="Email"
+          type="email"
+          placeholder="Enter your email"
+          required
+          :disabled="loading"
+          :error="emailError"
+        />
+        
+        <FormInput
+          v-model="password"
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          required
+          :disabled="loading"
+          :error="passwordError"
+        />
+        
+        <Button
+          type="submit"
+          variant="success"
+          :loading="loading"
+          loading-text="Creating account..."
+        >
+          Sign Up
+        </Button>
+      </form>
+    </Card>
     
     <div v-if="error" class="error-message">
       {{ error }}
@@ -30,6 +47,9 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api.js'
+import Card from '../components/common/Card.vue'
+import FormInput from '../components/common/FormInput.vue'
+import Button from '../components/common/Button.vue'
 
 const router = useRouter()
 const email = ref('')
@@ -37,14 +57,45 @@ const password = ref('')
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
+const emailError = ref('')
+const passwordError = ref('')
 
 const clearMessages = () => {
   error.value = ''
   success.value = ''
+  emailError.value = ''
+  passwordError.value = ''
+}
+
+const validateForm = () => {
+  let isValid = true
+  
+  if (!email.value) {
+    emailError.value = 'Email is required'
+    isValid = false
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    emailError.value = 'Please enter a valid email'
+    isValid = false
+  }
+  
+  if (!password.value) {
+    passwordError.value = 'Password is required'
+    isValid = false
+  } else if (password.value.length < 6) {
+    passwordError.value = 'Password must be at least 6 characters'
+    isValid = false
+  }
+  
+  return isValid
 }
 
 const handleSignup = async () => {
   clearMessages()
+  
+  if (!validateForm()) {
+    return
+  }
+  
   loading.value = true
   
   try {
@@ -90,36 +141,6 @@ form {
   display: flex;
   flex-direction: column;
   gap: 15px;
-}
-
-input {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-input:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
-button {
-  padding: 10px;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-button:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-button:hover:not(:disabled) {
-  background: #218838;
 }
 
 .error-message {

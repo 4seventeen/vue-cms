@@ -3,23 +3,31 @@
     <h1>Dashboard</h1>
     <p>Welcome to your Vue CMS dashboard!</p>
     
-    <div class="user-info">
-      <h2>User Information</h2>
-      <div v-if="user">
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <p><strong>User ID:</strong> {{ user.id }}</p>
-        <p><strong>Last Sign In:</strong> {{ formatDate(user.last_sign_in_at) }}</p>
+    <Card title="User Information">
+      <div v-if="user" class="user-info">
+        <div class="info-row">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{ user.email }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">User ID:</span>
+          <span class="info-value">{{ user.id }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Last Sign In:</span>
+          <span class="info-value">{{ formatDate(user.last_sign_in_at) }}</span>
+        </div>
       </div>
-      <div v-else-if="loading">
+      <div v-else-if="loading" class="loading-state">
         <p>Loading user information...</p>
       </div>
-      <div v-else>
+      <div v-else class="no-data">
         <p>No user information available</p>
       </div>
-    </div>
+    </Card>
 
     <div class="actions">
-      <button @click="signOut" class="btn btn-danger">Sign Out</button>
+      <Button variant="danger" @click="signOut">Sign Out</Button>
     </div>
 
     <div v-if="error" class="error-message">
@@ -32,6 +40,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api.js'
+import Card from '../components/common/Card.vue'
+import Button from '../components/common/Button.vue'
 
 const router = useRouter()
 const user = ref(null)
@@ -106,40 +116,42 @@ p {
 }
 
 .user-info {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.user-info h2 {
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 600;
   color: #333;
-  margin-bottom: 15px;
+  min-width: 120px;
 }
 
-.user-info p {
-  margin: 10px 0;
+.info-value {
+  color: #666;
+  text-align: right;
+}
+
+.loading-state, .no-data {
+  text-align: center;
+  color: #666;
+  padding: 20px;
 }
 
 .actions {
   margin: 20px 0;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.btn-danger {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #c82333;
 }
 
 .error-message {

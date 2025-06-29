@@ -3,25 +3,25 @@
     <h1>Welcome to Vue CMS</h1>
     <p>This is a simple content management system built with Vue.js and Supabase.</p>
     
-    <div class="features">
-      <h2>Features:</h2>
-      <ul>
+    <Card title="Features">
+      <ul class="features-list">
         <li>User Authentication</li>
         <li>Modern UI</li>
         <li>Responsive Design</li>
         <li>Real-time Database</li>
       </ul>
-    </div>
+    </Card>
     
     <div class="actions">
-      <router-link to="/signup" class="btn">Sign Up</router-link>
-      <router-link to="/signin" class="btn">Sign In</router-link>
+      <Button variant="success" @click="$router.push('/signup')">Sign Up</Button>
+      <Button variant="primary" @click="$router.push('/signin')">Sign In</Button>
     </div>
   </div>
 </template>
 
 <script setup>
-// Home component logic
+import Card from '../components/common/Card.vue'
+import Button from '../components/common/Button.vue'
 </script>
 
 <style scoped>
@@ -42,21 +42,13 @@ p {
   margin-bottom: 30px;
 }
 
-.features {
-  margin: 30px 0;
-}
-
-.features h2 {
-  color: #333;
-  margin-bottom: 15px;
-}
-
-.features ul {
+.features-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
-.features li {
+.features-list li {
   padding: 10px;
   margin: 5px 0;
   background: #f8f9fa;
@@ -66,6 +58,8 @@ p {
 
 .actions {
   margin-top: 30px;
+  display: flex;
+  gap: 15px;
 }
 
 .btn {
