@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const caseRoutes = require('./routes/caseRoutes');
 const supabaseRoutes = require('./src/routes/supabase');
 const supabase = require('./config/supabase');
 
@@ -11,6 +12,7 @@ app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'] }));
 app.use(express.json());
 
 app.use('/api', authRoutes);
+app.use('/api', caseRoutes);
 app.use('/api/supabase', supabaseRoutes);
 
 const PORT = process.env.PORT || 3000;
@@ -33,6 +35,11 @@ async function start() {
       console.log(`   - POST /api/signup - Create new user`);
       console.log(`   - POST /api/signin - Sign in user`);
       console.log(`   - GET  /api/user - Get current user (protected)`);
+      console.log(`🔗 Case endpoints:`);
+      console.log(`   - GET    /api/cases - Get user's cases`);
+      console.log(`   - GET    /api/cases/:id - Get specific case`);
+      console.log(`   - POST   /api/cases - Create new case`);
+      console.log(`   - PUT    /api/cases/:id - Update case description`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);

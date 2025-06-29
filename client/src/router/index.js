@@ -25,6 +25,21 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/Dashboard.vue')
+  },
+  {
+    path: '/file-complaint',
+    name: 'FileComplaint',
+    component: () => import('../views/FileComplaint.vue')
+  },
+  {
+    path: '/case/:id',
+    name: 'CaseDetail',
+    component: () => import('../views/CaseDetail.vue')
+  },
+  {
+    path: '/case/:id/edit',
+    name: 'EditCase',
+    component: () => import('../views/EditCase.vue')
   }
 ]
 
