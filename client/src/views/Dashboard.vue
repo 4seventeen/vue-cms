@@ -106,7 +106,7 @@ const formatDate = (dateString) => {
 }
 
 h1 {
-  color: #334;
+  color: #333;
   margin-bottom: 20px;
 }
 
