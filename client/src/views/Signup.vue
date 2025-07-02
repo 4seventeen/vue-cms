@@ -21,7 +21,17 @@
           :disabled="loading"
           :error="passwordError"
         />
-        
+
+        <FormInput
+          v-model="confirmPassword"
+          label="Confirm Password"
+          type="password"
+          placeholder="Confirm your password"
+          required
+          :disabled="loading"
+          :error="confirmPasswordError"
+        />
+
         <Button
           type="submit"
           variant="success"
@@ -54,17 +64,20 @@ import Button from '../components/common/Button.vue'
 const router = useRouter()
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
 const emailError = ref('')
 const passwordError = ref('')
+const confirmPasswordError = ref('')
 
 const clearMessages = () => {
   error.value = ''
   success.value = ''
   emailError.value = ''
   passwordError.value = ''
+  confirmPasswordError.value = ''
 }
 
 const validateForm = () => {
@@ -83,6 +96,14 @@ const validateForm = () => {
     isValid = false
   } else if (password.value.length < 6) {
     passwordError.value = 'Password must be at least 6 characters'
+    isValid = false
+  }
+  
+  if (!confirmPassword.value) {
+    confirmPasswordError.value = 'Please confirm your password'
+    isValid = false
+  } else if (password.value !== confirmPassword.value) {
+    confirmPasswordError.value = 'Passwords do not match'
     isValid = false
   }
   
@@ -109,6 +130,7 @@ const handleSignup = async () => {
     // Clear form
     email.value = ''
     password.value = ''
+    confirmPassword.value = ''
     
     // Redirect after showing success message
     setTimeout(() => {

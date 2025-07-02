@@ -18,6 +18,11 @@ const props = defineProps({
     default: 'primary',
     validator: (value) => ['primary', 'secondary', 'danger', 'success'].includes(value)
   },
+  size: {
+    type: String,
+    default: 'medium',
+    validator: (value) => ['small', 'medium', 'large'].includes(value)
+  },
   disabled: {
     type: Boolean,
     default: false
@@ -34,7 +39,8 @@ const props = defineProps({
 
 const buttonClasses = computed(() => {
   return {
-    [props.variant]: true
+    [props.variant]: true,
+    [props.size]: true
   }
 })
 
@@ -58,6 +64,25 @@ button {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Size variants */
+button.small {
+  padding: 6px 12px;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+button.medium {
+  padding: 10px 20px;
+  font-size: 16px;
+  min-width: 100px;
+}
+
+button.large {
+  padding: 12px 24px;
+  font-size: 18px;
+  min-width: 120px;
 }
 
 /* Primary variant */

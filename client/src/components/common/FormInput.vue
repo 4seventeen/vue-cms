@@ -1,7 +1,21 @@
 <template>
   <div class="form-group">
     <label v-if="label" :for="id" class="form-label">{{ label }}</label>
+    <textarea
+      v-if="type === 'textarea'"
+      :id="id"
+      :value="modelValue"
+      :placeholder="placeholder"
+      :required="required"
+      :disabled="disabled"
+      :class="inputClasses"
+      :rows="rows"
+      @input="$emit('update:modelValue', $event.target.value)"
+      @blur="$emit('blur', $event)"
+      @focus="$emit('focus', $event)"
+    ></textarea>
     <input
+      v-else
       :id="id"
       :type="type"
       :value="modelValue"
@@ -49,6 +63,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  rows: {
+    type: Number,
+    default: 4
+  },
   id: {
     type: String,
     default: () => `input-${Math.random().toString(36).substr(2, 9)}`
@@ -88,6 +106,12 @@ defineEmits(['update:modelValue', 'blur', 'focus'])
   box-sizing: border-box;
   color: #000000;
   background-color: #ffffff;
+  font-family: inherit;
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 100px;
 }
 
 .form-input:focus {

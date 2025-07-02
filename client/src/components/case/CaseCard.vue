@@ -1,25 +1,25 @@
 <template>
-  <div class="case-card" @click="$emit('click', case)">
+  <div class="case-card" @click="$emit('click', caseData)">
     <div class="case-header">
-      <h3 class="case-title">{{ case.title }}</h3>
-      <CaseStatus :status="case.status" />
+      <h3 class="case-title">{{ caseTitle }}</h3>
+      <CaseStatus :status="caseData.status || 'open'" />
     </div>
     
     <div class="case-body">
-      <p class="case-description">{{ case.description }}</p>
+      <p class="case-description">{{ caseDescription }}</p>
       
       <div class="case-meta">
         <div class="meta-item">
           <span class="meta-label">Case ID:</span>
-          <span class="meta-value">{{ case.id }}</span>
+          <span class="meta-value">{{ caseData.id }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Created:</span>
-          <span class="meta-value">{{ formatDate(case.created_at) }}</span>
+          <span class="meta-value">{{ formattedDate }}</span>
         </div>
-        <div class="meta-item">
-          <span class="meta-label">Priority:</span>
-          <span class="meta-value" :class="`priority-${case.priority}`">{{ case.priority }}</span>
+        <div class="meta-item" v-if="caseData.respondents && caseData.respondents.length > 0">
+          <span class="meta-label">Respondent:</span>
+          <span class="meta-value">{{ caseData.respondents[0].full_name }}</span>
         </div>
       </div>
     </div>
@@ -31,10 +31,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import CaseStatus from './CaseStatus.vue'
 
-defineProps({
-  case: {
+const props = defineProps({
+  caseData: {
     type: Object,
     required: true
   }
@@ -42,10 +43,24 @@ defineProps({
 
 defineEmits(['click'])
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString()
-}
+const caseTitle = computed(() => {
+  if (!props.caseData.case_description) return 'Untitled Case'
+  return props.caseData.case_description.length > 50 
+    ? props.caseData.case_description.substring(0, 50) + '...'
+    : props.caseData.case_description
+})
+
+const caseDescription = computed(() => {
+  if (!props.caseData.case_description) return 'No description available'
+  return props.caseData.case_description.length > 150 
+    ? props.caseData.case_description.substring(0, 150) + '...'
+    : props.caseData.case_description
+})
+
+const formattedDate = computed(() => {
+  if (!props.caseData.created_at) return 'N/A'
+  return new Date(props.caseData.created_at).toLocaleDateString()
+})
 </script>
 
 <style scoped>
@@ -112,18 +127,6 @@ const formatDate = (dateString) => {
   font-size: 14px;
   color: #333;
   font-weight: 500;
-}
-
-.priority-high {
-  color: #dc3545;
-}
-
-.priority-medium {
-  color: #ffc107;
-}
-
-.priority-low {
-  color: #28a745;
 }
 
 .case-footer {
