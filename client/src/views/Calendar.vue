@@ -1,25 +1,23 @@
 <template>
-  <v-container fluid>
-    <v-row justify="center">
-      <v-col cols="12" md="10" lg="8">
-        <v-card>
-          <v-card-title class="text-h5">Event Calendar</v-card-title>
-          <v-card-text>
-            <v-calendar
-              :attributes="calendarEvents"
-              is-expanded
-              @dayclick="onDayClick"
-              @click:event="onEventClick"
-              color="primary"
-              :weekdays="[0,1,2,3,4,5,6]"
-              :min-weeks="5"
-              :show-weeknumbers="false"
-            />
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+  <div class="flex justify-center w-full mt-24">
+    <div class="w-full max-w-4xl">
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-4">Event Calendar</h2>
+        <div>
+          <v-calendar
+            :attributes="calendarEvents"
+            is-expanded
+            @dayclick="onDayClick"
+            @click:event="onEventClick"
+            color="primary"
+            :weekdays="[0,1,2,3,4,5,6]"
+            :min-weeks="5"
+            :show-weeknumbers="false"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -78,9 +76,5 @@ function onDayClick(day) {
 </script>
 
 <style scoped>
-.v-card {
-  margin-top: 100px;
-  width: 100%;
-  height: 100%;
-}
+/* Remove .v-card styles, as Tailwind is now used for layout and spacing */
 </style> 
