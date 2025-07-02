@@ -33,6 +33,11 @@
       </form>
     </Card>
     
+    <div class="signup-redirect">
+      Don't have an account?
+      <router-link to="/signup" class="signup-link">Sign Up</router-link>
+    </div>
+    
     <div v-if="error" class="error-message">
       {{ error }}
     </div>
@@ -50,6 +55,7 @@ import api from '../services/api.js'
 import Card from '../components/common/Card.vue'
 import FormInput from '../components/common/FormInput.vue'
 import Button from '../components/common/Button.vue'
+import { supabase } from '../services/supabaseClient.js'
 
 const router = useRouter()
 const email = ref('')
@@ -103,17 +109,17 @@ const handleSignin = async () => {
     
     success.value = 'Sign in successful! Redirecting...'
     
-    // Store the Supabase session token
-    if (response.data.session?.access_token) {
-      localStorage.setItem('token', response.data.session.access_token)
-      
-      // Wait a moment to show success message, then redirect
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1500)
-    } else {
-      error.value = 'No session token received'
-    }
+    // Store session in Supabase client (also triggers localStorage token sync listener)
+    await supabase.auth.setSession(response.data.session)
+    
+    // Determine where to redirect based on profile completion
+    const profileCompleted = localStorage.getItem('profileCompleted') === 'true'
+    const redirectPath = profileCompleted ? '/dashboard' : '/complete-profile'
+    
+    // Wait a moment to show success message, then redirect
+    setTimeout(() => {
+      router.push(redirectPath)
+    }, 1500)
   } catch (err) {
     const errorMessage = err.response?.data?.error || 'Sign in failed'
     error.value = errorMessage
@@ -161,5 +167,23 @@ form {
   border-radius: 4px;
   margin-top: 15px;
   text-align: center;
+}
+
+.signup-redirect {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  margin-top: 18px;
+}
+
+.signup-link {
+  color: #ff6b6b;
+  margin-left: 4px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.signup-link:hover {
+  color: #ff4b4b;
 }
 </style>

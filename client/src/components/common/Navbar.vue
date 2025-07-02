@@ -7,16 +7,16 @@
         <template v-if="!props.isLoggedIn">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/about" class="nav-link">About</router-link>
-          <router-link to="/signin" class="nav-link">Sign In</router-link>
-          <router-link to="/signup" class="nav-link">Sign Up</router-link>
+          <div class="nav-complaint">
+            <router-link to="/signin" class="complaint-btn">File a Complaint</router-link>
+          </div>
         </template>
         <!-- Authenticated links -->
         <template v-else>
           <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
           <router-link to="/file-complaint" class="nav-link">File Complaint</router-link>
-          <router-link to="/profile" class="nav-link">Profile</router-link>
           <router-link to="/calendar" class="nav-link">Calendar</router-link>
-          <button @click="handleSignOut" class="nav-link signout-btn">Sign Out</button>
+          <router-link to="/profile" class="nav-link">Profile</router-link>
         </template>
       </div>
     </div>
@@ -24,6 +24,8 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
 const props = defineProps({
   isLoggedIn: {
     type: Boolean,
@@ -32,6 +34,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['sign-out'])
+
+const showDropdown = ref(false)
 
 const handleSignOut = () => {
   emit('sign-out')
@@ -93,5 +97,91 @@ console.log('Navbar isLoggedIn:', props.isLoggedIn)
 .signout-btn:hover {
   background: #ff6b6b;
   color: white;
+}
+
+.profile-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-btn {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 5px 10px;
+}
+
+.profile-btn:hover {
+  background: #555;
+  border-radius: 4px;
+}
+
+.dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  right: 0;
+  background: #222;
+  min-width: 140px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 100;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.dropdown-item {
+  color: white;
+  padding: 10px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.dropdown-item:hover {
+  background: #444;
+}
+
+.nav-complaint {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.complaint-btn {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  text-decoration: none;
+}
+
+.complaint-btn:hover {
+  background: #ff4b4b;
+}
+
+.signup-redirect {
+  font-size: 13px;
+  color: #ccc;
+}
+
+.signup-link {
+  color: #ff6b6b;
+  margin-left: 4px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.signup-link:hover {
+  color: #ff4b4b;
 }
 </style> 

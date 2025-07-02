@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { supabase } from './services/supabaseClient.js'
 import Navbar from './components/common/Navbar.vue'
 
 const router = useRouter()
@@ -12,8 +13,9 @@ const checkAuthStatus = () => {
   isLoggedIn.value = !!token
 }
 
-const handleSignOut = () => {
-  localStorage.removeItem('token')
+const handleSignOut = async () => {
+  await supabase.auth.signOut()
+  // supabase listener removes token for us
   isLoggedIn.value = false
   router.push('/signin')
 }

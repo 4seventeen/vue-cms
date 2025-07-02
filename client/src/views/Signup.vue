@@ -42,6 +42,12 @@
         </Button>
       </form>
     </Card>
+
+    <div class="signin-redirect">
+      Already have an account?
+      <router-link to="/signin" class="signin-link">Sign In</router-link>
+    </div>
+    
     
     <div v-if="error" class="error-message">
       {{ error }}
@@ -125,16 +131,19 @@ const handleSignup = async () => {
       password: password.value
     })
     
-    success.value = 'Account created successfully! Redirecting to sign in...'
+    success.value = 'Account created successfully! Redirecting...'
     
     // Clear form
     email.value = ''
     password.value = ''
     confirmPassword.value = ''
+
+    // Reset profile completion flag just in case
+    localStorage.removeItem('profileCompleted')
     
     // Redirect after showing success message
     setTimeout(() => {
-      router.push('/signin')
+      router.push('/complete-profile')
     }, 2000)
   } catch (err) {
     const errorMessage = err.response?.data?.error || 'Sign up failed'

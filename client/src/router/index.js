@@ -50,6 +50,16 @@ const routes = [
     path: '/calendar',
     name: 'Calendar',
     component: () => import('../views/Calendar.vue')
+  },
+  {
+    path: '/complete-profile',
+    name: 'CompleteProfile',
+    component: () => import('../views/CompleteProfile.vue')
+  },
+  {
+    path: '/edit-profile',
+    name: 'EditProfile',
+    component: () => import('../views/CompleteProfile.vue')
   }
 ]
 
@@ -69,6 +79,16 @@ router.beforeEach((to, from, next) => {
       return next('/signin');
     }
   }
+
+  // Inside beforeEach function we need to check profileCompleted flag
+  const profileCompleted = localStorage.getItem('profileCompleted') === 'true'
+  if (token && !profileCompleted && to.path !== '/complete-profile') {
+    return next('/complete-profile')
+  }
+  if (token && profileCompleted && to.path === '/complete-profile') {
+    return next('/dashboard')
+  }
+
   next();
 });
 
