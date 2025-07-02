@@ -30,7 +30,7 @@ watch(route, () => {
 
 <template>
   <div id="app">
-    <Navbar :is-logged-in="isLoggedIn" @sign-out="handleSignOut" />
+    <Navbar :isLoggedIn="isLoggedIn" @sign-out="handleSignOut" />
     
     <main class="main-content">
       <router-view />

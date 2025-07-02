@@ -45,6 +45,11 @@ const routes = [
     path: '/case/:id/edit',
     name: 'EditCase',
     component: () => import('../views/EditCase.vue')
+  },
+  {
+    path: '/calendar',
+    name: 'Calendar',
+    component: () => import('../views/Calendar.vue')
   }
 ]
 
@@ -52,5 +57,19 @@ const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+router.beforeEach((to, from, next) => {
+  const publicPages = ['/', '/about', '/signup', '/signin', '/case/:id', '/case/:id/edit'];
+  const authRequiredRoutes = ['/dashboard', '/file-complaint', '/profile', '/calendar'];
+  const token = localStorage.getItem('token');
+
+  // Check if the route requires authentication
+  if (authRequiredRoutes.includes(to.path)) {
+    if (!token) {
+      return next('/signin');
+    }
+  }
+  next();
+});
 
 export default router 
