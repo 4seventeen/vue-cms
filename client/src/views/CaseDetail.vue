@@ -25,49 +25,96 @@
       </div>
       
       <div class="case-grid">
-        <Card title="Case Information">
+        <!-- DIV 1 – Complainant Overview -->
+        <Card title="Case Overview">
           <div class="case-info">
             <div class="info-row">
-              <span class="info-label">Case ID:</span>
-              <span class="info-value">{{ caseData.id }}</span>
+              <span class="info-label">Case Type:</span>
+              <!-- TODO: Replace static text when case_type enum is added -->
+              <span class="info-value">{{ caseData.case_type || 'Theft and Robbery' }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Status:</span>
+              <span class="info-label">Respondent:</span>
               <span class="info-value">
-                <CaseStatus :status="caseData.status || 'open'" />
+                {{ caseData.respondents?.length ? caseData.respondents[0].full_name : '—' }}
               </span>
             </div>
             <div class="info-row">
-              <span class="info-label">Created:</span>
+              <span class="info-label">Filed Date:</span>
               <span class="info-value">{{ formatDate(caseData.created_at) }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Last Updated:</span>
-              <span class="info-value">{{ formatDate(caseData.updated_at) }}</span>
+              <span class="info-label">Resolved Date:</span>
+              <span class="info-value">{{ caseData.resolved_at ? formatDate(caseData.resolved_at) : '—' }}</span>
             </div>
           </div>
-        </Card>
-        
-        <Card title="Case Description">
-          <div class="case-description">
+          <div class="case-description" style="margin-top: 15px;">
             <p>{{ caseData.case_description }}</p>
           </div>
         </Card>
-        
-        <Card title="Respondent Information">
-          <div v-if="caseData.respondents && caseData.respondents.length > 0" class="respondent-info">
+
+        <!-- DIV 2 – Complainant Information -->
+        <Card title="Complainant Information">
+          <div class="complainant-info">
             <div class="info-row">
               <span class="info-label">Name:</span>
-              <span class="info-value">{{ caseData.respondents[0].full_name }}</span>
+              <span class="info-value">{{ complainantFullName }}</span>
             </div>
             <div class="info-row">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">{{ profile?.phone || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Email:</span>
+              <span class="info-value">{{ user?.email || '—' }}</span>
+            </div>
+            <div class="info-row" style="align-items: flex-start;">
               <span class="info-label">Address:</span>
-              <span class="info-value">{{ caseData.respondents[0].address }}</span>
+              <span class="info-value" style="text-align: left;">{{ fullAddress }}</span>
             </div>
           </div>
-          <div v-else class="no-respondent">
-            <p>No respondent information available</p>
+        </Card>
+
+        <!-- DIV 3 – Case Timeline -->
+        <Card title="Case Timeline">
+          <ul class="timeline">
+            <li v-for="(event, idx) in timelineEvents" :key="idx" class="timeline-event">
+              <div class="event-indicator"></div>
+              <div class="event-details">
+                <span class="event-title">{{ event.title }}</span>
+                <span class="event-date">{{ formatDate(event.date) }}</span>
+              </div>
+            </li>
+          </ul>
+        </Card>
+
+        <!-- DIV 4 – Attachments -->
+        <Card title="Attachments">
+          <template v-if="attachments && attachments.length">
+            <ul class="attachments">
+              <li v-for="file in attachments" :key="file.id" class="attachment-item">
+                <span>{{ file.file_name }}</span>
+                <Button variant="secondary" size="small" @click="downloadFile(file)">Download</Button>
+              </li>
+            </ul>
+          </template>
+          <template v-else>
+            <p>No attachments available.</p>
+          </template>
+        </Card>
+
+        <!-- DIV 5 – Download Case Report Action -->
+        <Card>
+          <div class="actions" style="justify-content:center;">
+            <Button variant="primary" @click="downloadReport" style="width: 220px;">
+              Download Case Report
+            </Button>
           </div>
+        </Card>
+
+        <!-- DIV 6 – Hearing Information (placeholder) -->
+        <Card title="Hearing Information">
+          <p>Hearing details will be shown here once available.</p>
         </Card>
       </div>
     </div>
@@ -75,12 +122,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCaseById } from '../services/caseService.js'
 import Card from '../components/common/Card.vue'
 import Button from '../components/common/Button.vue'
-import CaseStatus from '../components/case/CaseStatus.vue'
+import { supabase } from '../services/supabaseClient.js'
+
+// Additional reactive state for complainant and timeline
+const user = ref(null)
+const profile = ref(null)
+const timelineEvents = ref([])
 
 const route = useRoute()
 const router = useRouter()
@@ -89,17 +141,45 @@ const loading = ref(true)
 const error = ref('')
 
 onMounted(async () => {
-  await loadCase()
+  await Promise.all([loadCase(), loadUserInfo()])
 })
+
+// Fetch complainant (authenticated user) info
+const loadUserInfo = async () => {
+  try {
+    const { data: userRes, error: userErr } = await supabase.auth.getUser()
+    if (userErr || !userRes?.user) throw new Error(userErr?.message || 'Failed to fetch user')
+    user.value = userRes.user
+
+    // Fetch profile row
+    const { data: profileData, error: profileErr } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.value.id)
+      .maybeSingle()
+    if (profileErr) throw new Error(profileErr.message)
+    profile.value = profileData || null
+  } catch (err) {
+    console.error('Error loading complainant info:', err)
+  }
+}
 
 const loadCase = async () => {
   try {
     const caseId = route.params.id
     const response = await getCaseById(caseId)
     caseData.value = response.case
+
+    // Build basic timeline once we have the case data
+    timelineEvents.value = [
+      { title: 'Case filed', date: response.case.created_at },
+      { title: 'Case accessed', date: new Date().toISOString() },
+      // Placeholder events – to be replaced with real log data
+      { title: 'Hearing conducted', date: response.case.hearing_date || null },
+      { title: 'Case resolved', date: response.case.resolved_at || null }
+    ].filter(e => e.date)
   } catch (err) {
     console.error('Error loading case:', err)
-    
     if (err.response?.status === 404) {
       error.value = 'Case not found'
     } else if (err.response?.status === 401) {
@@ -107,21 +187,49 @@ const loadCase = async () => {
     } else {
       error.value = 'Failed to load case details. Please try again.'
     }
-    
-    // Clear error after 10 seconds
-    setTimeout(() => {
-      if (error.value) {
-        error.value = ''
-      }
-    }, 10000)
+    setTimeout(() => (error.value = ''), 10000)
   } finally {
     loading.value = false
   }
 }
 
 const editCase = () => {
+  if (!caseData.value) return
   router.push(`/case/${caseData.value.id}/edit`)
 }
+
+const downloadReport = () => {
+  // TODO: implement once backend report generation is available
+  alert('Download functionality coming soon!')
+}
+
+const downloadFile = (file) => {
+  if (!file?.file_url) return
+  window.open(file.file_url, '_blank')
+}
+
+// Derived/computed properties
+const complainantFullName = computed(() => {
+  if (!profile.value) return '—'
+  return [profile.value.first_name, profile.value.middle_name, profile.value.last_name, profile.value.suffix]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const fullAddress = computed(() => {
+  if (!profile.value) return '—'
+  const parts = [
+    profile.value.house_street,
+    profile.value.sitio_purok_subdivision,
+    profile.value.barangay,
+    profile.value.city,
+    profile.value.province,
+    profile.value.country
+  ].filter(Boolean)
+  return parts.join(', ')
+})
+
+const attachments = computed(() => caseData.value?.attachments || [])
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
@@ -175,6 +283,12 @@ const formatDate = (dateString) => {
   gap: 15px;
 }
 
+.complainant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .info-row {
   display: flex;
   justify-content: space-between;
@@ -210,6 +324,68 @@ const formatDate = (dateString) => {
   text-align: center;
   color: #666;
   padding: 20px;
+}
+
+/* Timeline styles */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline-event {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.event-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0d6efd;
+  margin-right: 12px;
+  margin-top: 6px;
+}
+
+.event-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.event-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.event-date {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Attachments styles */
+.attachments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.attachment-item:last-child {
+  border-bottom: none;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
