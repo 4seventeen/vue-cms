@@ -92,8 +92,8 @@
             <ul class="attachments">
               <li v-for="file in attachments" :key="file.id" class="attachment-item">
                 <div class="file-details">
-                  <span class="file-name">{{ file.original_filename || file.file_name }}</span>
-                  <span class="file-type">({{ file.mime_type || 'unknown type' }})</span>
+                  <span class="file-name">{{ file.file_name }}</span>
+                  <span class="file-type">({{ file.file_type || 'unknown type' }})</span>
                 </div>
                 <Button variant="secondary" size="small" @click="downloadFile(file)">Download</Button>
               </li>
@@ -204,9 +204,37 @@ const downloadReport = () => {
   alert('Download functionality coming soon!')
 }
 
-const downloadFile = (file) => {
-  if (!file?.file_url) return
-  window.open(file.file_url, '_blank')
+const downloadFile = async (file) => {
+  if (!file?.storage_path) return
+
+  const bucket = 'case-attachments'
+
+  try {
+    // Generate a short-lived signed URL (60 s)
+    const { data, error } = await supabase
+      .storage
+      .from(bucket)
+      .createSignedUrl(file.storage_path, 60)
+
+    if (error || !data?.signedUrl) throw error || new Error('Missing signed URL')
+
+    const url = data.signedUrl
+
+    // Open preview in a new tab
+    window.open(url, '_blank')
+
+    // Auto-trigger file download with the original file name
+    const link = document.createElement('a')
+    link.href = url
+    link.target = '_blank'
+    link.download = file.file_name || ''
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (err) {
+    console.error('Failed to download attachment:', err)
+    alert('Failed to download attachment. Please try again.')
+  }
 }
 
 // Derived/computed properties
