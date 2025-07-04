@@ -6,11 +6,26 @@ const getAllCases = async (req, res) => {
     const { data: cases, error } = await supabase
       .from('cases')
       .select(`
-        *,
+        id:uuid_id,
+        user_id,
+        case_description,
+        status,
+        created_at,
         respondents (
-          id,
-          full_name,
-          address
+          id:uuid_id,
+          first_name,
+          middle_name,
+          last_name,
+          suffix,
+          sitio_purok_subd,
+          house_no_street
+        ),
+        attachments:case_attachments (
+          id:uuid_id,
+          file_name,
+          file_type,
+          file_size,
+          storage_path
         )
       `)
       .eq('user_id', req.user.id)
@@ -37,14 +52,29 @@ const getCaseById = async (req, res) => {
     const { data: caseData, error } = await supabase
       .from('cases')
       .select(`
-        *,
+        id:uuid_id,
+        user_id,
+        case_description,
+        status,
+        created_at,
         respondents (
-          id,
-          full_name,
-          address
+          id:uuid_id,
+          first_name,
+          middle_name,
+          last_name,
+          suffix,
+          sitio_purok_subd,
+          house_no_street
+        ),
+        attachments:case_attachments (
+          id:uuid_id,
+          file_name,
+          file_type,
+          file_size,
+          storage_path
         )
       `)
-      .eq('id', id)
+      .eq('uuid_id', id)
       .eq('user_id', userId)
       .single();
 
@@ -70,29 +100,47 @@ const getCaseById = async (req, res) => {
 // Create a new case
 const createCase = async (req, res) => {
   try {
-    const { case_description, respondent_name, respondent_address } = req.body;
+    const {
+      case_description,
+      status: rawStatus,
+      respondent_first_name,
+      respondent_middle_name = null,
+      respondent_last_name,
+      respondent_suffix = null,
+      respondent_sitio,
+      respondent_house
+    } = req.body;
     const userId = req.user.id;
 
+    const statusEnum = ['pending', 'in progress', 'resolved', 'open', 'closed'];
+
+    // Normalise and validate status
+    let status = (rawStatus || 'pending').toLowerCase().replace('_', ' ');
+
+    if (!statusEnum.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+
     // Validate required fields
-    if (!case_description || !respondent_name || !respondent_address) {
+    if (!case_description || !respondent_first_name || !respondent_last_name || !respondent_sitio || !respondent_house) {
       return res.status(400).json({ 
-        error: 'case_description, respondent_name, and respondent_address are required' 
+        error: 'Missing required case or respondent fields' 
       });
     }
 
-    // Set the user context for RLS policies (if using anon key)
-    // This is an alternative to using service role key
-    const userToken = req.header("Authorization")?.replace("Bearer ", "");
-    if (userToken) {
-      supabase.auth.setSession({ access_token: userToken, refresh_token: null });
-    }
+    // NOTE: The Supabase client on the server already uses the "service role" key,
+    // which bypasses RLS and does not require setting the user session manually.
+    // Attempting to call supabase.auth.setSession with a missing refresh token
+    // results in an "AuthApiError: refresh token required" which breaks the
+    // request. Therefore we no longer call setSession here.
 
     // Start a transaction by creating the case first
     const { data: caseData, error: caseError } = await supabase
       .from('cases')
       .insert({
         user_id: userId,
-        case_description: case_description
+        case_description,
+        status
       })
       .select()
       .single();
@@ -106,9 +154,13 @@ const createCase = async (req, res) => {
     const { data: respondentData, error: respondentError } = await supabase
       .from('respondents')
       .insert({
-        case_id: caseData.id,
-        full_name: respondent_name,
-        address: respondent_address
+        case_uuid: caseData.uuid_id,
+        first_name: respondent_first_name,
+        middle_name: respondent_middle_name,
+        last_name: respondent_last_name,
+        suffix: respondent_suffix,
+        sitio_purok_subd: respondent_sitio,
+        house_no_street: respondent_house
       })
       .select()
       .single();
@@ -116,22 +168,37 @@ const createCase = async (req, res) => {
     if (respondentError) {
       console.error('Error creating respondent:', respondentError);
       // Clean up the case if respondent creation fails
-      await supabase.from('cases').delete().eq('id', caseData.id);
+      await supabase.from('cases').delete().eq('uuid_id', caseData.uuid_id);
       return res.status(500).json({ error: 'Failed to create respondent' });
     }
 
-    // Fetch the complete case with respondent data
+    // Fetch the complete case with respondent data + attachments
     const { data: completeCase, error: fetchError } = await supabase
       .from('cases')
       .select(`
-        *,
+        id:uuid_id,
+        user_id,
+        case_description,
+        status,
+        created_at,
         respondents (
-          id,
-          full_name,
-          address
+          id:uuid_id,
+          first_name,
+          middle_name,
+          last_name,
+          suffix,
+          sitio_purok_subd,
+          house_no_street
+        ),
+        attachments:case_attachments (
+          id:uuid_id,
+          file_name,
+          file_type,
+          file_size,
+          storage_path
         )
       `)
-      .eq('id', caseData.id)
+      .eq('uuid_id', caseData.uuid_id)
       .single();
 
     if (fetchError) {
@@ -153,19 +220,27 @@ const createCase = async (req, res) => {
 const updateCase = async (req, res) => {
   try {
     const { id } = req.params;
-    const { case_description } = req.body;
+    const { case_description, status: statusRaw } = req.body;
     const userId = req.user.id;
 
-    // Validate required field
-    if (!case_description) {
-      return res.status(400).json({ error: 'case_description is required' });
+    const statusEnum = ['pending', 'in progress', 'resolved', 'open', 'closed'];
+
+    // Normalise and validate status
+    const statusUpdate = statusRaw ? statusRaw.toLowerCase().replace('_', ' ') : null;
+
+    if (!case_description && !statusUpdate) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    if (statusUpdate && !statusEnum.includes(statusUpdate)) {
+      return res.status(400).json({ error: 'Invalid status value' });
     }
 
     // First check if the case exists and belongs to the user
     const { data: existingCase, error: checkError } = await supabase
       .from('cases')
-      .select('id')
-      .eq('id', id)
+      .select('uuid_id')
+      .eq('uuid_id', id)
       .eq('user_id', userId)
       .single();
 
@@ -174,17 +249,36 @@ const updateCase = async (req, res) => {
     }
 
     // Update the case description
+    const updatePayload = {};
+    if (case_description) updatePayload.case_description = case_description;
+    if (statusUpdate) updatePayload.status = statusUpdate;
+
     const { data: updatedCase, error: updateError } = await supabase
       .from('cases')
-      .update({ case_description })
-      .eq('id', id)
+      .update(updatePayload)
+      .eq('uuid_id', id)
       .eq('user_id', userId)
       .select(`
-        *,
+        id:uuid_id,
+        user_id,
+        case_description,
+        status,
+        created_at,
         respondents (
-          id,
-          full_name,
-          address
+          id:uuid_id,
+          first_name,
+          middle_name,
+          last_name,
+          suffix,
+          sitio_purok_subd,
+          house_no_street
+        ),
+        attachments:case_attachments (
+          id:uuid_id,
+          file_name,
+          file_type,
+          file_size,
+          storage_path
         )
       `)
       .single();

@@ -35,9 +35,7 @@
             </div>
             <div class="info-row">
               <span class="info-label">Respondent:</span>
-              <span class="info-value">
-                {{ caseData.respondents?.length ? caseData.respondents[0].full_name : '—' }}
-              </span>
+              <span class="info-value">{{ respondentFullName }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Filed Date:</span>
@@ -93,7 +91,10 @@
           <template v-if="attachments && attachments.length">
             <ul class="attachments">
               <li v-for="file in attachments" :key="file.id" class="attachment-item">
-                <span>{{ file.file_name }}</span>
+                <div class="file-details">
+                  <span class="file-name">{{ file.original_filename || file.file_name }}</span>
+                  <span class="file-type">({{ file.mime_type || 'unknown type' }})</span>
+                </div>
                 <Button variant="secondary" size="small" @click="downloadFile(file)">Download</Button>
               </li>
             </ul>
@@ -227,6 +228,13 @@ const fullAddress = computed(() => {
     profile.value.country
   ].filter(Boolean)
   return parts.join(', ')
+})
+
+/* Respondent full name using new schema */
+const respondentFullName = computed(() => {
+  if (!caseData.value?.respondents?.length) return '—'
+  const r = caseData.value.respondents[0]
+  return [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(' ')
 })
 
 const attachments = computed(() => caseData.value?.attachments || [])
@@ -381,6 +389,26 @@ const formatDate = (dateString) => {
 
 .attachment-item:last-child {
   border-bottom: none;
+}
+
+.file-details {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+}
+
+.file-name {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #000;
+}
+
+.file-type {
+  font-size: 0.85rem;
+  color: #333;
 }
 
 .actions {

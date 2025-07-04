@@ -17,8 +17,26 @@ app.use('/api/supabase', supabaseRoutes);
 
 const PORT = process.env.PORT || 3000;
 
+// Ensure the required storage bucket exists (runs once at startup)
+async function ensureBucketExists() {
+  const bucketId = 'case-attachments';
+
+  // Attempt to create bucket; ignore "already exists" errors
+  const { error } = await supabase.storage.createBucket(bucketId, { public: false });
+
+  if (error && !(error.statusCode === '409' || error.message?.includes('already exists'))) {
+    // 409 or "already exists" means another run created it; anything else is fatal
+    throw error;
+  }
+
+  console.log(`✅ Storage bucket "${bucketId}" ready`);
+}
+
 async function start() {
   try {
+    // Make sure storage bucket is available before handling requests
+    await ensureBucketExists();
+
     // Test Supabase connection by checking auth service
     console.log('Testing Supabase connection...');
     const { data, error } = await supabase.auth.getUser();

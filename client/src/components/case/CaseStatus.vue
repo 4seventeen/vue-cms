@@ -1,5 +1,5 @@
 <template>
-  <span :class="statusClasses">{{ status }}</span>
+  <span :class="statusClasses">{{ displayText }}</span>
 </template>
 
 <script setup>
@@ -9,15 +9,22 @@ const props = defineProps({
   status: {
     type: String,
     required: true,
-    validator: (value) => ['open', 'in-progress', 'resolved', 'closed'].includes(value)
+    validator: (value) => ['open', 'in progress', 'in-progress', 'resolved', 'closed', 'pending'].includes(value.toLowerCase())
   }
 })
 
-const statusClasses = computed(() => {
-  return {
-    'status-badge': true,
-    [`status-${props.status.replace('-', '-')}`]: true
-  }
+const normalised = computed(() => props.status.toLowerCase().replace(/[_\s]/g, '-'))
+
+const statusClasses = computed(() => ({
+  'status-badge': true,
+  [`status-${normalised.value}`]: true
+}))
+
+const displayText = computed(() => {
+  return props.status
+    .toLowerCase()
+    .replace(/[_-]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
 })
 </script>
 
@@ -49,5 +56,10 @@ const statusClasses = computed(() => {
 .status-closed {
   background: #f5f5f5;
   color: #616161;
+}
+
+.status-pending {
+  background: #e1f5fe;
+  color: #0277bd;
 }
 </style> 

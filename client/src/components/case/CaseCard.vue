@@ -19,7 +19,7 @@
         </div>
         <div class="meta-item" v-if="caseData.respondents && caseData.respondents.length > 0">
           <span class="meta-label">Respondent:</span>
-          <span class="meta-value">{{ caseData.respondents[0].full_name }}</span>
+          <span class="meta-value">{{ respondentFullName }}</span>
         </div>
       </div>
     </div>
@@ -60,6 +60,12 @@ const caseDescription = computed(() => {
 const formattedDate = computed(() => {
   if (!props.caseData.created_at) return 'N/A'
   return new Date(props.caseData.created_at).toLocaleDateString()
+})
+
+const respondentFullName = computed(() => {
+  if (!props.caseData.respondents || !props.caseData.respondents.length) return '—'
+  const r = props.caseData.respondents[0]
+  return [r.first_name, r.middle_name, r.last_name, r.suffix].filter(Boolean).join(' ')
 })
 </script>
 

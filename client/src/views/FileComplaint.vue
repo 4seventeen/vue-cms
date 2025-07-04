@@ -1,40 +1,78 @@
 <template>
   <div class="file-complaint">
     <h1>File a Complaint</h1>
-    <p>Submit a new case with respondent information.</p>
-    
-    <Card title="Case Information">
+    <p>Submit your complaint details and supporting documents.</p>
+
+    <Card>
       <form @submit.prevent="handleSubmit">
+        <h2>Name of Respondent</h2>
+        <div class="name-grid">
+          <FormInput
+            v-model="form.respondent_first_name"
+            label="First Name"
+            required
+            :disabled="loading"
+            :error="errors.respondent_first_name"
+          />
+          <FormInput
+            v-model="form.respondent_middle_name"
+            label="Middle Name (optional)"
+            :disabled="loading"
+            :error="errors.respondent_middle_name"
+          />
+          <FormInput
+            v-model="form.respondent_last_name"
+            label="Last Name"
+            required
+            :disabled="loading"
+            :error="errors.respondent_last_name"
+          />
+          <FormInput
+            v-model="form.respondent_suffix"
+            label="Suffix"
+            placeholder="e.g. Jr, Sr, III"
+            :disabled="loading"
+            :error="errors.respondent_suffix"
+          />
+        </div>
+
+        <h2>Address</h2>
+        <div class="address-grid">
+          <FormInput
+            v-model="form.respondent_sitio"
+            label="Sitio/Purok/Subd."
+            required
+            :disabled="loading"
+            :error="errors.respondent_sitio"
+          />
+          <FormInput
+            v-model="form.respondent_house"
+            label="House No. & Street"
+            required
+            :disabled="loading"
+            :error="errors.respondent_house"
+          />
+        </div>
+
+        <h2>Complaint Description</h2>
         <FormInput
           v-model="form.case_description"
-          label="Case Description"
           type="textarea"
-          placeholder="Describe your complaint in detail..."
+          placeholder="Input Complaint Details Here"
           required
           :disabled="loading"
           :error="errors.case_description"
+          :rows="6"
         />
-        
-        <FormInput
-          v-model="form.respondent_name"
-          label="Respondent Name"
-          type="text"
-          placeholder="Enter the respondent's full name"
-          required
-          :disabled="loading"
-          :error="errors.respondent_name"
-        />
-        
-        <FormInput
-          v-model="form.respondent_address"
-          label="Respondent Address"
-          type="text"
-          placeholder="Enter the respondent's address"
-          required
-          :disabled="loading"
-          :error="errors.respondent_address"
-        />
-        
+
+        <h2>Upload Attachments <span class="text-muted">(optional)</span></h2>
+        <div class="upload-box">
+          <input type="file" multiple @change="handleFileChange" :disabled="loading" />
+          <ul v-if="form.attachments.length">
+            <li v-for="file in form.attachments" :key="file.name">{{ file.name }}</li>
+          </ul>
+        </div>
+
         <div class="form-actions">
           <Button
             type="submit"
@@ -42,7 +80,7 @@
             :loading="loading"
             loading-text="Submitting..."
           >
-            Submit Complaint
+            Proceed to Payment
           </Button>
           <Button
             type="button"
@@ -55,11 +93,11 @@
         </div>
       </form>
     </Card>
-    
+
     <div v-if="error" class="error-message">
       {{ error }}
     </div>
-    
+
     <div v-if="success" class="success-message">
       {{ success }}
     </div>
@@ -70,6 +108,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createCase } from '../services/caseService.js'
+import { supabase } from '../services/supabaseClient.js'
 import Card from '../components/common/Card.vue'
 import FormInput from '../components/common/FormInput.vue'
 import Button from '../components/common/Button.vue'
@@ -80,30 +119,55 @@ const error = ref('')
 const success = ref('')
 
 const form = ref({
+  respondent_first_name: '',
+  respondent_middle_name: '',
+  respondent_last_name: '',
+  respondent_suffix: '',
+  respondent_sitio: '',
+  respondent_house: '',
   case_description: '',
-  respondent_name: '',
-  respondent_address: ''
+  attachments: []
 })
 
 const errors = ref({
-  case_description: '',
-  respondent_name: '',
-  respondent_address: ''
+  respondent_first_name: '',
+  respondent_middle_name: '',
+  respondent_last_name: '',
+  respondent_suffix: '',
+  respondent_sitio: '',
+  respondent_house: '',
+  case_description: ''
 })
 
 const clearMessages = () => {
   error.value = ''
   success.value = ''
-  errors.value = {
-    case_description: '',
-    respondent_name: '',
-    respondent_address: ''
-  }
+  Object.keys(errors.value).forEach(key => (errors.value[key] = ''))
 }
 
 const validateForm = () => {
   let isValid = true
-  
+
+  if (!form.value.respondent_first_name.trim()) {
+    errors.value.respondent_first_name = 'First name is required'
+    isValid = false
+  }
+
+  if (!form.value.respondent_last_name.trim()) {
+    errors.value.respondent_last_name = 'Last name is required'
+    isValid = false
+  }
+
+  if (!form.value.respondent_sitio.trim()) {
+    errors.value.respondent_sitio = 'Sitio/Purok/Subd. is required'
+    isValid = false
+  }
+
+  if (!form.value.respondent_house.trim()) {
+    errors.value.respondent_house = 'House No. & Street is required'
+    isValid = false
+  }
+
   if (!form.value.case_description.trim()) {
     errors.value.case_description = 'Case description is required'
     isValid = false
@@ -111,61 +175,100 @@ const validateForm = () => {
     errors.value.case_description = 'Case description must be at least 10 characters'
     isValid = false
   }
-  
-  if (!form.value.respondent_name.trim()) {
-    errors.value.respondent_name = 'Respondent name is required'
-    isValid = false
-  }
-  
-  if (!form.value.respondent_address.trim()) {
-    errors.value.respondent_address = 'Respondent address is required'
-    isValid = false
-  }
-  
+
   return isValid
+}
+
+const handleFileChange = (e) => {
+  form.value.attachments = Array.from(e.target.files)
 }
 
 const handleSubmit = async () => {
   clearMessages()
-  
+
   if (!validateForm()) {
     return
   }
-  
+
   loading.value = true
-  
+
   try {
+    /* 1. Create the case first (without attachments) */
     const payload = {
       case_description: form.value.case_description.trim(),
-      respondent_name: form.value.respondent_name.trim(),
-      respondent_address: form.value.respondent_address.trim()
+      respondent_first_name: form.value.respondent_first_name.trim(),
+      respondent_middle_name: form.value.respondent_middle_name.trim(),
+      respondent_last_name: form.value.respondent_last_name.trim(),
+      respondent_suffix: form.value.respondent_suffix.trim(),
+      respondent_sitio: form.value.respondent_sitio.trim(),
+      respondent_house: form.value.respondent_house.trim()
     }
-    
+
     const response = await createCase(payload)
-    
+    const caseId = response?.case?.id
+
+    /* 2. Upload attachments (if any) and create DB references under the user's RLS context */
+    if (caseId && form.value.attachments.length) {
+      // Get current session for uploaded_by value and auth check
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session?.user) {
+        throw new Error('User session expired. Please sign in again.')
+      }
+
+      for (const file of form.value.attachments) {
+        const timestamp = Date.now()
+        const randomString = Math.random().toString(36).substring(2, 10)
+        const filePath = `${caseId}/${timestamp}_${randomString}_${file.name}`
+
+        // 1. Upload the file to the "attachments" storage bucket
+        const { error: uploadErr } = await supabase
+          .storage
+          .from('case-attachments')
+          .upload(filePath, file)
+        if (uploadErr) throw uploadErr
+
+        // 2. Insert row into case_attachments table
+        const { error: insertErr } = await supabase
+          .from('case_attachments')
+          .insert({
+            case_uuid: caseId,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+            storage_path: filePath,
+            uploaded_by: session.user.id
+          })
+          .select()
+          .single()
+        
+        if (insertErr) {
+          console.error('Attachment insert error details:', insertErr)
+          throw insertErr
+        }
+      }
+    }
+
     success.value = 'Complaint submitted successfully! Redirecting to dashboard...'
-    
+
     // Clear form
     form.value = {
+      respondent_first_name: '',
+      respondent_middle_name: '',
+      respondent_last_name: '',
+      respondent_suffix: '',
+      respondent_sitio: '',
+      respondent_house: '',
       case_description: '',
-      respondent_name: '',
-      respondent_address: ''
+      attachments: []
     }
-    
-    // Redirect after showing success message
+
     setTimeout(() => {
       router.push('/dashboard')
     }, 2000)
   } catch (err) {
     const errorMessage = err.response?.data?.error || 'Failed to submit complaint'
     error.value = errorMessage
-    
-    // Clear error after 5 seconds
-    setTimeout(() => {
-      if (error.value === errorMessage) {
-        error.value = ''
-      }
-    }, 5000)
   } finally {
     loading.value = false
   }
@@ -174,31 +277,35 @@ const handleSubmit = async () => {
 
 <style scoped>
 .file-complaint {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 20px;
 }
 
-h1 {
-  color: #333;
-  margin-bottom: 10px;
+.name-grid,
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
 }
 
-p {
-  color: #666;
-  margin-bottom: 30px;
+.upload-box {
+  border: 2px dashed #d9d9d9;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
 }
 
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.upload-box ul {
+  margin-top: 10px;
+  text-align: left;
 }
 
 .form-actions {
+  margin-top: 25px;
   display: flex;
   gap: 15px;
-  margin-top: 20px;
+  justify-content: flex-end;
 }
 
 .error-message {
